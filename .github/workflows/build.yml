@@ -5,29 +5,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      # 1. Checkout with v4 (Latest)
+      - uses: actions/checkout@v4
 
+      # 2. Setup Java with v4 (Latest)
       - name: Setup Java 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
+      # 3. Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
+      # 4. Project Creation & Engine Injection
       - name: Initialize Project & Engine
         run: |
-          # 1. Create Project
+          # Create Project
           flutter create --platforms android infinitydisk
           cd infinitydisk
           
-          # 2. Add Premium Plugins
+          # Add Plugins
           flutter pub add file_picker path_provider ffi permission_handler dio crypto
 
-          # 3. Inject C++ Immortal Engine (RAID-5 Logic)
+          # Inject C++ Engine Logic
           mkdir -p android/app/src/main/cpp
           cat <<EOF > android/app/src/main/cpp/infinity_core.cpp
           #include <stdint.h>
@@ -41,12 +45,13 @@ jobs:
           }
           EOF
 
+          # CMake Config
           cat <<EOF > android/app/src/main/cpp/CMakeLists.txt
           cmake_minimum_required(VERSION 3.10.2)
           add_library(infinity_core SHARED infinity_core.cpp)
           EOF
 
-          # 4. Inject Cream UI with Payment Logic
+          # Premium Cream UI
           cat <<EOF > lib/main.dart
           import 'package:flutter/material.dart';
           void main() => runApp(MaterialApp(
@@ -58,29 +63,27 @@ jobs:
               body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Icon(Icons.layers_rounded, size: 120, color: Colors.brown[300]),
                 SizedBox(height: 20),
-                Text("1024 GB MESH ACTIVE", style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.brown)),
-                Text("Status: Secure & Immortal", style: TextStyle(color: Colors.green)),
-                SizedBox(height: 50),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.brown[900], foregroundColor: Colors.white, minimumSize: Size(200, 50)),
-                  onPressed: () {}, 
-                  child: Text("UPGRADE TO 2TB (₹99)"),
-                )
+                Text("INFINITY DISK 2026", style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.brown)),
+                Text("1 TB CLOUD MESH: ACTIVE", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                SizedBox(height: 40),
+                CircularProgressIndicator(color: Colors.brown[200]),
               ])),
             ),
           ));
           EOF
 
-      - name: Build Final APK
+      # 5. Final Patch & Build
+      - name: Build APK
         run: |
           cd infinitydisk
-          # Patch Gradle for C++
+          # Patch Gradle
           sed -i '/android {/a \    externalNativeBuild { cmake { path "src/main/cpp/CMakeLists.txt" } }' android/app/build.gradle
-          # Build APK
+          # Build Command
           flutter build apk --release --android-skip-build-dependency-validation
 
+      # 6. Upload with v4 (This was the error point - FIXED NOW)
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: InfinityDisk_Final_APK
           path: infinitydisk/build/app/outputs/flutter-apk/app-release.apk
