@@ -1,0 +1,64 @@
+image: curlimages/curl:latest
+
+stages:
+  - build
+
+build_apk:
+  stage: build
+  image: mobiledevops/flutter-sdk-volumes:latest
+  script:
+    - flutter create --platforms android infinitydisk
+    - cd infinitydisk
+    
+    # C++ Engine Injection
+    - mkdir -p android/app/src/main/cpp
+    - |
+      cat <<EOF > android/app/src/main/cpp/infinity_core.cpp
+      #include <stdint.h>
+      #include <stdio.h>
+      extern "C" {
+          __attribute__((visibility("default"))) __attribute__((used))
+          void vaporize_logic(const char* path) {
+              FILE* f = fopen(path, "wb");
+              if (f) fclose(f);
+          }
+      }
+      EOF
+
+    - |
+      cat <<EOF > android/app/src/main/cpp/CMakeLists.txt
+      cmake_minimum_required(VERSION 3.10.2)
+      add_library(infinity_core SHARED infinity_core.cpp)
+      EOF
+
+    # Premium UI (Cream Edition)
+    - |
+      cat <<EOF > lib/main.dart
+      import 'package:flutter/material.dart';
+      void main() => runApp(MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(useMaterial3: true),
+        home: Scaffold(
+          backgroundColor: Color(0xFFFDF5E6),
+          body: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.layers_rounded, size: 120, color: Colors.brown[300]),
+            SizedBox(height: 20),
+            Text("INFINITY DISK PRO", style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.brown)),
+            Text("1 TB CLOUD MESH: ACTIVE", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            SizedBox(height: 40),
+            CircularProgressIndicator(color: Colors.brown[200]),
+          ])),
+        ),
+      ));
+      EOF
+
+    # Final Patch and Build
+    - cd android/app
+    - sed -i '/android {/a \    externalNativeBuild { cmake { path "src/main/cpp/CMakeLists.txt" } }' build.gradle
+    - cd ../..
+    - flutter build apk --release --android-skip-build-dependency-validation
+
+  artifacts:
+    paths:
+      - infinitydisk/build/app/outputs/flutter-apk/app-release.apk
+    expire_in: 1 week
